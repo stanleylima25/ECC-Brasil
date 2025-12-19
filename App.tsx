@@ -23,7 +23,10 @@ import {
   ClipboardList,
   CalendarDays,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Star,
+  Clock,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Couple, RegistrationStatus, User, UserRole, ECCNotification } from './types';
 import { storageService } from './services/storageService';
@@ -37,10 +40,11 @@ import RegionDirectory from './pages/RegionDirectory';
 import SongDirectory from './pages/SongDirectory';
 import EncounterHistory from './pages/EncounterHistory';
 import EventsManager from './pages/EventsManager';
+import Gallery from './pages/Gallery';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'couples' | 'register' | 'approval' | 'chat' | 'regions' | 'songs' | 'history' | 'events'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'couples' | 'register' | 'approval' | 'chat' | 'regions' | 'songs' | 'history' | 'events' | 'gallery'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [couples, setCouples] = useState<Couple[]>([]);
   const [notifications, setNotifications] = useState<ECCNotification[]>([]);
@@ -55,14 +59,14 @@ const App: React.FC = () => {
     const savedUser = localStorage.getItem('ecc_session');
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
-      setCurrentUser(parsedUser);
+      const freshUser = storageService.getUsers().find(u => u.id === parsedUser.id);
+      setCurrentUser(freshUser || parsedUser);
       if (parsedUser.role === 'COUPLE_USER') {
         setActiveTab('chat');
       }
     }
     if (window.innerWidth >= 1024) setIsSidebarOpen(true);
 
-    // Polling de notificações
     const interval = setInterval(() => {
       if (currentUser) {
         setNotifications(storageService.getNotifications(currentUser.id));
@@ -107,24 +111,29 @@ const App: React.FC = () => {
     setNotifications(storageService.getNotifications(currentUser!.id));
   };
 
-  const isAuthorizedForRegistrationData = (role: UserRole): boolean => {
+  const isAuthorizedForRegistrationData = (user: User): boolean => {
+    if (!user) return false;
+    if (user.role === 'SPIRITUAL_DIRECTOR') return true;
+
     const authorizedRoles: UserRole[] = [
-      'NATIONAL_COUNCIL',
-      'NATIONAL_COUPLE',
-      'REGIONAL_COUPLE',
-      'SPIRITUAL_DIRECTOR',
-      'ARCHDIOCESAN_COUPLE',
-      'STAGE_1_TEAM',
-      'STAGE_2_TEAM',
-      'STAGE_3_TEAM'
+      'NATIONAL_COUNCIL', 'NATIONAL_COUPLE', 'REGIONAL_COUPLE',
+      'ARCHDIOCESAN_COUPLE', 'SECTOR_COUPLE',
+      'STAGE_1_TEAM', 'STAGE_2_TEAM', 'STAGE_3_TEAM'
     ];
-    return authorizedRoles.includes(role);
+
+    const hasRole = authorizedRoles.includes(user.role);
+    const isTermValid = new Date() <= new Date(user.termEnd);
+
+    return hasRole && isTermValid;
   };
 
   if (!currentUser) return <Login onLogin={(user) => setCurrentUser(user)} />;
 
   const isCouple = currentUser.role === 'COUPLE_USER';
-  const hasAccessToData = isAuthorizedForRegistrationData(currentUser.role);
+  const isDirector = currentUser.role === 'SPIRITUAL_DIRECTOR';
+  const hasAccessToData = isAuthorizedForRegistrationData(currentUser);
+  const isTermExpired = !isDirector && !isCouple && new Date() > new Date(currentUser.termEnd);
+  
   const pendingCount = couples.filter(c => c.status === RegistrationStatus.PENDING).length;
   const unreadNotifications = notifications.filter(n => !n.read).length;
 
@@ -138,7 +147,7 @@ const App: React.FC = () => {
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-white/5 bg-black/20 flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="bg-white p-1 rounded-xl shadow-lg border border-amber-400/30 overflow-hidden shrink-0">
+              <div className="bg-white p-1.5 rounded-2xl shadow-xl border border-amber-400 overflow-hidden shrink-0 transform transition-transform hover:scale-110">
                 <img src="https://upload.wikimedia.org/wikipedia/pt/4/4e/Brasao_ECC.png" alt="ECC Logo" className="w-10 h-10 object-contain" />
               </div>
               <div className="min-w-0">
@@ -153,30 +162,39 @@ const App: React.FC = () => {
             
             <NavItem icon={<CalendarDays size={20}/>} label={isCouple ? "Agenda Paroquial" : "Eventos e Agenda"} active={activeTab === 'events'} onClick={() => navigateTo('events')} />
 
+            <NavItem icon={<ImageIcon size={20}/>} label="Galeria de Memórias" active={activeTab === 'gallery'} onClick={() => navigateTo('gallery')} />
+
             {hasAccessToData && (
               <>
-                <NavItem icon={<Users size={20}/>} label="Casais Cadastrados" active={activeTab === 'couples'} onClick={() => navigateTo('couples')} />
-                <NavItem icon={<History size={20}/>} label="Histórico Nacional" active={activeTab === 'history'} onClick={() => navigateTo('history')} />
+                <NavItem icon={<Users size={20}/>} label="Fichas de Inscritos" active={activeTab === 'couples'} onClick={() => navigateTo('couples')} />
+                <NavItem icon={<History size={20}/>} label="Histórico Regional" active={activeTab === 'history'} onClick={() => navigateTo('history')} />
               </>
             )}
 
-            {!isCouple && <NavItem icon={<UserPlus size={20}/>} label="Novo Registro" active={activeTab === 'register'} onClick={() => navigateTo('register')} />}
+            {!isCouple && !isTermExpired && <NavItem icon={<UserPlus size={20}/>} label="Novo Registro" active={activeTab === 'register'} onClick={() => navigateTo('register')} />}
             
             <NavItem icon={<MessageSquare size={20}/>} label={isCouple ? "Dúvidas e Chat" : "Comunicação"} active={activeTab === 'chat'} onClick={() => navigateTo('chat')} />
             <NavItem icon={<Music size={20}/>} label="Cancioneiro ECC" active={activeTab === 'songs'} onClick={() => navigateTo('songs')} />
             
             {hasAccessToData && (
               <>
-                <NavItem icon={<ShieldCheck size={20}/>} label="Fila de Aprovação" active={activeTab === 'approval'} onClick={() => navigateTo('approval')} badge={pendingCount > 0 ? pendingCount : undefined} />
+                <NavItem icon={<ShieldCheck size={20}/>} label="Homologações" active={activeTab === 'approval'} onClick={() => navigateTo('approval')} badge={pendingCount > 0 ? pendingCount : undefined} />
                 <NavItem icon={<Landmark size={20}/>} label="Diretoria Regional" active={activeTab === 'regions'} onClick={() => navigateTo('regions')} />
               </>
+            )}
+
+            {isTermExpired && (
+               <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl animate-pulse">
+                  <p className="text-[10px] font-black text-red-500 uppercase tracking-widest text-center">Mandato Expirado</p>
+                  <p className="text-[8px] text-slate-400 font-medium text-center mt-1">Contate o Diretor Espiritual para renovação de vigência.</p>
+               </div>
             )}
           </nav>
 
           <div className="p-4 border-t border-white/5 bg-black/20 shrink-0">
             <div className="flex items-center space-x-3 p-3 mb-4 rounded-2xl bg-white/5 border border-white/5">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg shrink-0 ${isCouple ? 'bg-amber-500' : 'bg-indigo-500'}`}>
-                {currentUser.name.charAt(0)}
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg shrink-0 ${isDirector ? 'bg-amber-500 text-[#0f172a]' : isCouple ? 'bg-indigo-500' : 'bg-slate-500'}`}>
+                {isDirector ? <Star size={20} fill="currentColor" /> : currentUser.name.charAt(0)}
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold truncate leading-none">{currentUser.name}</p>
@@ -198,22 +216,30 @@ const App: React.FC = () => {
               <Menu size={24} />
             </button>
             <h2 className="text-sm lg:text-xl font-black tracking-tight uppercase">
-              {activeTab === 'dashboard' && 'Visão Geral'}
-              {activeTab === 'couples' && 'Banco de Dados Nacional'}
-              {activeTab === 'register' && 'Registro de Casal'}
+              {activeTab === 'dashboard' && 'Portal Eclesiástico'}
+              {activeTab === 'couples' && 'Fichas de Casais'}
+              {activeTab === 'register' && 'Novo Registro'}
               {activeTab === 'history' && 'Histórico de Atuações'}
-              {activeTab === 'approval' && 'Homologações'}
-              {activeTab === 'chat' && (isCouple ? 'Suporte ao Casal' : 'Canais de Comunicação')}
+              {activeTab === 'approval' && 'Homologações Pendentes'}
+              {activeTab === 'chat' && (isCouple ? 'Suporte ao Casal' : 'Canais de Coordenação')}
               {activeTab === 'songs' && 'Cancioneiro'}
-              {activeTab === 'events' && 'Agenda Paroquial'}
+              {activeTab === 'events' && 'Agenda Arquidiocesana'}
+              {activeTab === 'gallery' && 'Galeria de Memórias'}
             </h2>
           </div>
           
           <div className="flex items-center space-x-4">
-             <div className="hidden md:flex flex-col items-end">
-              <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest leading-none">{currentUser.parish}</p>
-              <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase">{currentUser.region}</p>
-            </div>
+             {isTermExpired ? (
+               <div className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-xl shadow-lg shadow-red-500/20">
+                  <Clock size={16}/>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Mandato Vencido</span>
+               </div>
+             ) : (
+               <div className="hidden md:flex flex-col items-end">
+                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest leading-none">{currentUser.parish}</p>
+                <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase">Fim da Vigência: {new Date(currentUser.termEnd).toLocaleDateString()}</p>
+              </div>
+             )}
             
             <div className="relative">
               <button 
@@ -263,11 +289,6 @@ const App: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    {notifications.length > 0 && (
-                      <div className="p-4 bg-slate-50 dark:bg-slate-950/40 text-center">
-                        <button className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:underline">Ver todas</button>
-                      </div>
-                    )}
                   </div>
                 </>
               )}
@@ -281,23 +302,25 @@ const App: React.FC = () => {
 
         <div className={`flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar ${theme === 'dark' ? 'bg-slate-950' : 'bg-slate-100'}`}>
           <div className="max-w-7xl mx-auto pb-10">
-            {activeTab === 'dashboard' && !isCouple && <Dashboard couples={couples} onRefresh={refreshData} isDark={theme === 'dark'} currentUser={currentUser} />}
+            {activeTab === 'dashboard' && <Dashboard couples={couples} onRefresh={refreshData} isDark={theme === 'dark'} currentUser={currentUser} />}
             
             {activeTab === 'couples' && (
               hasAccessToData ? 
                 <CoupleList couples={couples} onRefresh={refreshData} isDark={theme === 'dark'} /> : 
-                <AccessDenied isDark={theme === 'dark'} />
+                <AccessDenied isDark={theme === 'dark'} reason={isTermExpired ? "Mandato Expirado" : "Acesso Restrito"} />
             )}
             
             {activeTab === 'history' && (
               hasAccessToData ? 
                 <EncounterHistory isDark={theme === 'dark'} /> : 
-                <AccessDenied isDark={theme === 'dark'} />
+                <AccessDenied isDark={theme === 'dark'} reason={isTermExpired ? "Mandato Expirado" : "Acesso Restrito"} />
             )}
 
             {activeTab === 'events' && <EventsManager isDark={theme === 'dark'} currentUser={currentUser} />}
 
-            {activeTab === 'register' && !isCouple && <RegistrationForm onComplete={() => { navigateTo('couples'); refreshData(); }} isDark={theme === 'dark'} />}
+            {activeTab === 'gallery' && <Gallery isDark={theme === 'dark'} currentUser={currentUser} />}
+
+            {activeTab === 'register' && !isCouple && !isTermExpired && <RegistrationForm onComplete={() => { navigateTo('couples'); refreshData(); }} isDark={theme === 'dark'} />}
             {activeTab === 'approval' && hasAccessToData && <ApprovalQueue couples={couples.filter(c => c.status === RegistrationStatus.PENDING)} onRefresh={refreshData} isDark={theme === 'dark'} />}
             
             {activeTab === 'chat' && <ChatRoom currentUser={currentUser} isDark={theme === 'dark'} />}
@@ -311,14 +334,16 @@ const App: React.FC = () => {
   );
 };
 
-const AccessDenied = ({ isDark }: { isDark: boolean }) => (
+const AccessDenied = ({ isDark, reason }: { isDark: boolean, reason?: string }) => (
   <div className={`flex flex-col items-center justify-center py-32 text-center animate-fadeIn ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
     <div className="p-8 bg-red-500/10 rounded-full mb-6">
       <Lock size={64} className="text-red-500" />
     </div>
-    <h2 className="text-3xl font-black tracking-tight mb-2">Acesso Restrito</h2>
+    <h2 className="text-3xl font-black tracking-tight mb-2">{reason || 'Acesso Restrito'}</h2>
     <p className="text-slate-500 max-w-md text-sm font-medium">
-      Estas informações são confidenciais e acessíveis apenas às Equipes Dirigentes e Conselhos. Casais podem utilizar o chat para solicitar informações sobre seu prontuário.
+      {reason === "Mandato Expirado" 
+        ? "Sua vigência de coordenação encerrou. O acesso às fichas de casais é restrito a coordenadores ativos conforme diretrizes do ECC."
+        : "Estas informações são confidenciais e acessíveis apenas às Equipes Dirigentes e Conselhos ativos."}
     </p>
   </div>
 );

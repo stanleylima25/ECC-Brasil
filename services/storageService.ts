@@ -1,5 +1,5 @@
 
-import { Couple, RegistrationStatus, ChatMessage, ApostolicRegion, ECCStage, ECCSong, User, ECCEvent, EventAttendee, ECCNotification } from '../types';
+import { Couple, RegistrationStatus, ChatMessage, ApostolicRegion, ECCStage, ECCSong, User, ECCEvent, EventAttendee, ECCNotification, SpiritualMessage, ECCGalleryPhoto } from '../types';
 
 const STORAGE_KEY = 'ecc_couples_db';
 const CHAT_KEY = 'ecc_chat_messages';
@@ -7,9 +7,40 @@ const REGIONS_KEY = 'ecc_apostolic_regions';
 const SONGS_KEY = 'ecc_songs_db';
 const USERS_KEY = 'ecc_users_accounts';
 const EVENTS_KEY = 'ecc_events_agenda';
+const GALLERY_KEY = 'ecc_gallery_db';
 const NOTIFICATIONS_KEY = 'ecc_notifications_db';
+const SPIRITUAL_MSGS_KEY = 'ecc_spiritual_messages';
 
 export const storageService = {
+  // Galeria de Fotos
+  getGalleryPhotos: (): ECCGalleryPhoto[] => {
+    const data = localStorage.getItem(GALLERY_KEY);
+    return data ? JSON.parse(data) : [];
+  },
+
+  saveGalleryPhoto: (photo: ECCGalleryPhoto) => {
+    const photos = storageService.getGalleryPhotos();
+    photos.push(photo);
+    localStorage.setItem(GALLERY_KEY, JSON.stringify(photos));
+  },
+
+  deleteGalleryPhoto: (id: string) => {
+    const photos = storageService.getGalleryPhotos().filter(p => p.id !== id);
+    localStorage.setItem(GALLERY_KEY, JSON.stringify(photos));
+  },
+
+  // Mensagens Espirituais
+  getSpiritualMessages: (): SpiritualMessage[] => {
+    const data = localStorage.getItem(SPIRITUAL_MSGS_KEY);
+    return data ? JSON.parse(data) : [];
+  },
+
+  saveSpiritualMessage: (msg: SpiritualMessage) => {
+    const msgs = storageService.getSpiritualMessages();
+    msgs.push(msg);
+    localStorage.setItem(SPIRITUAL_MSGS_KEY, JSON.stringify(msgs));
+  },
+
   // Gestão de Usuários (Contas)
   getUsers: (): (User & { password?: string })[] => {
     const data = localStorage.getItem(USERS_KEY);
@@ -23,6 +54,16 @@ export const storageService = {
     }
     users.push(user);
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  },
+
+  updateUserTerm: (userId: string, newTermEnd: string) => {
+    const users = storageService.getUsers();
+    const index = users.findIndex(u => u.id === userId);
+    if (index >= 0) {
+      users[index].termEnd = newTermEnd;
+      users[index].isTermExtended = true;
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
   },
 
   findUser: (email: string, password?: string): User | null => {

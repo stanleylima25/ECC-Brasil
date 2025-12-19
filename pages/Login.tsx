@@ -48,6 +48,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     setTimeout(() => {
       try {
+        const now = new Date();
+        const twoYearsLater = new Date();
+        twoYearsLater.setFullYear(now.getFullYear() + 2);
+
         const newUser: User & { password?: string } = {
           id: Math.random().toString(36).substr(2, 9),
           name,
@@ -55,10 +59,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           email,
           password,
           parish,
-          region
+          region,
+          termStart: now.toISOString(),
+          termEnd: twoYearsLater.toISOString()
         };
         storageService.saveUser(newUser);
-        alert("Acesso criado com sucesso! Agora você pode realizar o login.");
+        alert("Acesso criado com sucesso! Sua vigência inicial é de 2 anos. Agora você pode realizar o login.");
         setIsSignup(false);
         setPassword('');
       } catch (err: any) {
@@ -70,15 +76,30 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-500 via-transparent to-transparent"></div>
-
+      {/* Efeito de iluminação de fundo */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(circle_at_center,_#1e3a8a_0%,_transparent_70%)]"></div>
+      
       <div className="w-full max-w-xl relative z-10">
         <div className="text-center mb-10 animate-fadeIn">
-          <div className="inline-flex items-center justify-center p-6 bg-amber-500 rounded-3xl shadow-2xl shadow-amber-500/20 mb-6 border-4 border-amber-400">
-            <ShieldCheck className="w-16 h-16 text-[#0f172a]" />
+          <div className="relative inline-block">
+            {/* Brilho dourado atrás do brasão */}
+            <div className="absolute inset-0 bg-amber-500/20 blur-[60px] rounded-full animate-pulse"></div>
+            
+            <div className="relative inline-flex items-center justify-center p-4 bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] mb-6 border-4 border-amber-400 overflow-hidden transform hover:scale-105 transition-transform duration-500">
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/pt/4/4e/Brasao_ECC.png" 
+                alt="Brasão ECC" 
+                className="w-24 h-24 lg:w-32 lg:h-32 object-contain"
+              />
+            </div>
           </div>
-          <h1 className="text-4xl lg:text-5xl font-black text-white tracking-tighter">ECC BRASIL</h1>
-          <p className="text-amber-500 font-bold uppercase tracking-[0.3em] text-[10px] mt-3">Sistema de Gestão e Comunicação</p>
+          
+          <h1 className="text-4xl lg:text-5xl font-black text-white tracking-tighter drop-shadow-lg">ECC BRASIL</h1>
+          <div className="flex items-center justify-center space-x-2 mt-3">
+            <span className="h-px w-8 bg-amber-500/50"></span>
+            <p className="text-amber-500 font-bold uppercase tracking-[0.3em] text-[10px]">Portal de Gestão Eclesiástica</p>
+            <span className="h-px w-8 bg-amber-500/50"></span>
+          </div>
         </div>
 
         <div className="bg-white rounded-[3.5rem] shadow-2xl overflow-hidden p-8 lg:p-12 border border-slate-200 animate-slideUp">
@@ -86,17 +107,17 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <div className="flex p-1 bg-slate-100 rounded-2xl mb-8">
             <button 
               onClick={() => { setIsSignup(false); setError(null); }}
-              className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center space-x-2 transition-all ${!isSignup ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}
+              className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center space-x-2 transition-all ${!isSignup ? 'bg-[#0f172a] text-white shadow-lg' : 'text-slate-400'}`}
             >
               <LogIn size={14} />
               <span>Acessar</span>
             </button>
             <button 
               onClick={() => { setIsSignup(true); setError(null); }}
-              className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center space-x-2 transition-all ${isSignup ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}
+              className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center space-x-2 transition-all ${isSignup ? 'bg-[#0f172a] text-white shadow-lg' : 'text-slate-400'}`}
             >
               <UserPlus size={14} />
-              <span>Novo Cadastro</span>
+              <span>Solicitar Acesso</span>
             </button>
           </div>
 
@@ -127,12 +148,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                       onChange={(e) => setRole(e.target.value as UserRole)}
                       className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-xs appearance-none"
                     >
-                      <optgroup label="Coordenação">
+                      <optgroup label="Coordenação Arquidiocesana">
+                        <option value="SPIRITUAL_DIRECTOR">Diretor Espiritual Arquidiocesano</option>
                         <option value="NATIONAL_COUNCIL">Conselho Nacional</option>
                         <option value="NATIONAL_COUPLE">Casal Nacional</option>
                         <option value="REGIONAL_COUPLE">Casal Regional</option>
-                        <option value="SPIRITUAL_DIRECTOR">Diretor Espiritual</option>
                         <option value="ARCHDIOCESAN_COUPLE">Casal Arquidiocesano</option>
+                        <option value="SECTOR_COUPLE">Casal Setorial</option>
+                      </optgroup>
+                      <optgroup label="Coordenação Local">
                         <option value="STAGE_1_TEAM">Equipe Dirigente 1ª Etapa</option>
                         <option value="STAGE_2_TEAM">Equipe Dirigente 2ª Etapa</option>
                         <option value="STAGE_3_TEAM">Equipe Dirigente 3ª Etapa</option>
@@ -184,7 +208,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <div className="flex items-start space-x-3 p-5 bg-slate-50 rounded-2xl border border-slate-100">
                 <input type="checkbox" id="terms" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-1 w-5 h-5 rounded text-indigo-600 border-slate-300" />
                 <label htmlFor="terms" className="text-[9px] text-slate-600 font-bold leading-relaxed uppercase">
-                  Declaro que as informações acima são verdadeiras e que este acesso será utilizado para comunicação com a coordenação do ECC.
+                  Declaro que as informações acima são verdadeiras e que este acesso será utilizado para comunicação com a coordenação arquidiocesana do ECC conforme as normas da Igreja.
                 </label>
               </div>
             )}
@@ -194,7 +218,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <div className="w-6 h-6 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
               ) : (
                 <>
-                  <span className="uppercase tracking-widest text-xs">{isSignup ? 'Finalizar Cadastro' : 'Entrar no Sistema'}</span>
+                  <span className="uppercase tracking-widest text-xs">{isSignup ? 'Finalizar Solicitação' : 'Entrar no Sistema'}</span>
                   <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
                 </>
               )}
@@ -205,11 +229,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <div className="mt-8 pt-8 border-t border-slate-100 text-center flex flex-col items-center space-y-4">
               <p className="text-[10px] font-bold text-slate-400 uppercase flex items-center justify-center space-x-2">
                 <CheckCircle2 size={14} className="text-emerald-500" />
-                <span>Base de dados criptografada</span>
+                <span>Criptografia de Nível Eclesiástico</span>
               </p>
               <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100 flex items-center space-x-3">
                  <Heart size={16} className="text-amber-500" />
-                 <p className="text-[9px] font-black text-amber-600 uppercase">Casais: Utilizem este portal para conversar com sua coordenação.</p>
+                 <p className="text-[9px] font-black text-amber-600 uppercase">Gestão dedicada à Família e à Igreja.</p>
               </div>
             </div>
           )}

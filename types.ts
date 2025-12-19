@@ -17,6 +17,7 @@ export type UserRole =
   | 'REGIONAL_COUPLE' 
   | 'SPIRITUAL_DIRECTOR' 
   | 'ARCHDIOCESAN_COUPLE' 
+  | 'SECTOR_COUPLE'
   | 'STAGE_1_TEAM' 
   | 'STAGE_2_TEAM' 
   | 'STAGE_3_TEAM'
@@ -29,6 +30,16 @@ export interface Person {
   phone?: string;
   email?: string;
   occupation?: string;
+}
+
+export interface SpiritualMessage {
+  id: string;
+  authorId: string;
+  authorName: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  category: 'REFLEXAO' | 'AVISO' | 'ORACAO';
 }
 
 export interface ECCDocument {
@@ -110,6 +121,17 @@ export interface ECCEvent {
   attendees?: EventAttendee[]; 
 }
 
+export interface ECCGalleryPhoto {
+  id: string;
+  url: string; // Base64
+  title: string;
+  description?: string;
+  eventId?: string; // Vinculo opcional com evento da agenda
+  stage: ECCStage | 'GERAL';
+  uploadedBy: string;
+  createdAt: string;
+}
+
 export interface ECCNotification {
   id: string;
   userId: string;
@@ -188,4 +210,7 @@ export interface User {
   parish: string;
   region: string;
   jurisdiction?: string;
+  termStart: string;
+  termEnd: string;
+  isTermExtended?: boolean;
 }

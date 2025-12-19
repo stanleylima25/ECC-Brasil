@@ -8,7 +8,7 @@ import {
   Coffee, Shield, Mic2, Users2, Info, FileText, Printer, Mail,
   Landmark, PenTool, Layout, ClipboardList, Quote, Book, Monitor,
   Award, Anchor, ImageIcon, Clock, CheckCircle2, ChevronRight, Briefcase,
-  ShieldCheck
+  ShieldCheck, SlidersHorizontal, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 interface CoupleListProps {
@@ -19,46 +19,150 @@ interface CoupleListProps {
 
 const CoupleList: React.FC<CoupleListProps> = ({ couples, onRefresh, isDark }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchHusband, setSearchHusband] = useState('');
+  const [searchWife, setSearchWife] = useState('');
+  const [searchParish, setSearchParish] = useState('');
+  const [searchCity, setSearchCity] = useState('');
   const [filterState, setFilterState] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedCouple, setSelectedCouple] = useState<Couple | null>(null);
   const [viewingQuadrante, setViewingQuadrante] = useState<string | null>(null);
 
   const filtered = couples.filter(c => {
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = c.husband.name.toLowerCase().includes(searchLower) ||
-                         c.wife.name.toLowerCase().includes(searchLower) ||
-                         c.parish.toLowerCase().includes(searchLower) ||
-                         c.region.toLowerCase().includes(searchLower) ||
-                         c.city.toLowerCase().includes(searchLower);
+    const sTerm = searchTerm.toLowerCase();
+    const sHusband = searchHusband.toLowerCase();
+    const sWife = searchWife.toLowerCase();
+    const sParish = searchParish.toLowerCase();
+    const sCity = searchCity.toLowerCase();
+
+    // Busca Global
+    const matchesGlobal = searchTerm === '' || 
+                         c.husband.name.toLowerCase().includes(sTerm) ||
+                         c.wife.name.toLowerCase().includes(sTerm) ||
+                         c.parish.toLowerCase().includes(sTerm) ||
+                         c.city.toLowerCase().includes(sTerm) ||
+                         c.region.toLowerCase().includes(sTerm);
+    
+    // Filtros Individuais
+    const matchesHusband = searchHusband === '' || c.husband.name.toLowerCase().includes(sHusband);
+    const matchesWife = searchWife === '' || c.wife.name.toLowerCase().includes(sWife);
+    const matchesParish = searchParish === '' || c.parish.toLowerCase().includes(sParish);
+    const matchesCity = searchCity === '' || c.city.toLowerCase().includes(sCity);
     const matchesState = filterState === '' || c.state === filterState;
-    return matchesSearch && matchesState;
+
+    return matchesGlobal && matchesHusband && matchesWife && matchesParish && matchesCity && matchesState;
   });
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSearchHusband('');
+    setSearchWife('');
+    setSearchParish('');
+    setSearchCity('');
+    setFilterState('');
+  };
+
+  const hasActiveFilters = searchHusband || searchWife || searchParish || searchCity || filterState;
 
   return (
     <div className="space-y-6">
-      <div className={`p-4 rounded-3xl shadow-sm border flex flex-col md:flex-row gap-4 items-center transition-colors duration-300 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-          <input 
-            type="text" 
-            placeholder="Pesquisar Casal (Nome, Paróquia ou Cidade...)"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={`w-full pl-10 pr-4 py-3 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-colors duration-300 ${isDark ? 'bg-slate-800 text-slate-100 placeholder:text-slate-500' : 'bg-slate-50 text-slate-900'}`}
-          />
+      <div className={`p-6 rounded-[2rem] shadow-sm border transition-colors duration-300 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+        <div className="flex flex-col lg:flex-row gap-4 items-center">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <input 
+              type="text" 
+              placeholder="Busca rápida (Nome, Paróquia ou Cidade...)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`w-full pl-12 pr-4 py-3.5 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-colors duration-300 ${isDark ? 'bg-slate-800 text-slate-100 placeholder:text-slate-500' : 'bg-slate-50 text-slate-900'}`}
+            />
+          </div>
+          
+          <div className="flex w-full lg:w-auto gap-3">
+            <button 
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className={`flex-1 lg:flex-none px-6 py-3.5 rounded-2xl font-bold flex items-center justify-center space-x-2 transition-all border ${showAdvanced ? (isDark ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-indigo-600 border-indigo-500 text-white') : (isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50')}`}
+            >
+              <SlidersHorizontal size={18} />
+              <span className="text-xs uppercase tracking-widest">Filtros</span>
+              {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+
+            <button className="px-6 py-3.5 bg-indigo-600 text-white rounded-2xl font-bold flex items-center justify-center space-x-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20">
+              <CloudDownload size={20} />
+              <span className="hidden md:inline text-xs uppercase tracking-widest">Sincronizar</span>
+            </button>
+          </div>
         </div>
-        <select 
-          value={filterState} 
-          onChange={(e) => setFilterState(e.target.value)}
-          className={`px-4 py-3 border-none rounded-2xl font-medium outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-300 w-full md:w-auto ${isDark ? 'bg-slate-800 text-slate-200' : 'bg-slate-50 text-slate-600'}`}
-        >
-          <option value="">Todos os Estados</option>
-          {['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'].map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <button className="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold flex items-center justify-center space-x-2 hover:bg-indigo-700 transition-all w-full md:w-auto">
-          <CloudDownload size={20} />
-          <span>Sincronizar</span>
-        </button>
+
+        {/* Painel de Busca Avançada */}
+        {showAdvanced && (
+          <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 animate-slideDown">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nome do Marido</label>
+                <input 
+                  type="text" value={searchHusband} onChange={(e) => setSearchHusband(e.target.value)}
+                  className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold outline-none ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-900'}`}
+                  placeholder="Pesquisar ele..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nome da Esposa</label>
+                <input 
+                  type="text" value={searchWife} onChange={(e) => setSearchWife(e.target.value)}
+                  className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold outline-none ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-900'}`}
+                  placeholder="Pesquisar ela..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Paróquia</label>
+                <input 
+                  type="text" value={searchParish} onChange={(e) => setSearchParish(e.target.value)}
+                  className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold outline-none ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-900'}`}
+                  placeholder="Nome da paróquia..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Cidade</label>
+                <input 
+                  type="text" value={searchCity} onChange={(e) => setSearchCity(e.target.value)}
+                  className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold outline-none ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-900'}`}
+                  placeholder="Nome da cidade..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Estado</label>
+                <select 
+                  value={filterState} onChange={(e) => setFilterState(e.target.value)}
+                  className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold outline-none appearance-none ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-900'}`}
+                >
+                  <option value="">Todos (UF)</option>
+                  {['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+            
+            {hasActiveFilters && (
+              <div className="mt-6 flex justify-end">
+                <button 
+                  onClick={clearFilters}
+                  className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center hover:underline"
+                >
+                  <X size={14} className="mr-1.5" />
+                  Limpar todos os filtros
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between px-2">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+          Resultados: <span className="text-indigo-600">{filtered.length} casais</span>
+        </p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -100,6 +204,13 @@ const CoupleList: React.FC<CoupleListProps> = ({ couples, onRefresh, isDark }) =
             </div>
           </div>
         ))}
+        {filtered.length === 0 && (
+          <div className="col-span-full py-20 text-center opacity-30">
+            <Search size={48} className="mx-auto mb-4" />
+            <p className="text-sm font-black uppercase tracking-widest">Nenhum casal encontrado</p>
+            <p className="text-xs font-medium mt-1">Tente ajustar seus critérios de busca.</p>
+          </div>
+        )}
       </div>
 
       {selectedCouple && (
@@ -165,7 +276,7 @@ const CoupleList: React.FC<CoupleListProps> = ({ couples, onRefresh, isDark }) =
                   </section>
                 </div>
 
-                {/* Coluna de Histórico de Serviço - O QUE FOI SOLICITADO */}
+                {/* Coluna de Histórico de Serviço */}
                 <div className="lg:col-span-8 space-y-10">
                    <div className="flex items-center justify-between">
                      <h4 className={`text-2xl font-black flex items-center ${isDark ? 'text-white' : 'text-slate-800'}`}>

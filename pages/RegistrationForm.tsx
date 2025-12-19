@@ -1,4 +1,4 @@
-
+// RegistrationForm.tsx - Fixed model name for maps grounding compatibility
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Camera, MapPin, Phone, User, Plus, Trash2, ShieldCheck, 
@@ -110,12 +110,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onComplete, isDark 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const prompt = `Extraia os detalhes do endereço brasileiro para esta descrição: "${addressDescription}". Retorne APENAS um JSON com os campos: logradouro, bairro, cidade, estado (sigla).`;
+      
+      // Fix: Updated model to gemini-2.5-flash for compatibility with googleMaps tool as per guidelines.
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.5-flash",
         contents: prompt,
         config: { tools: [{ googleMaps: {} }] },
       });
-      const jsonMatch = response.text.match(/\{.*\}/s);
+      const jsonMatch = response.text?.match(/\{.*\}/s);
       if (jsonMatch) {
         const data = JSON.parse(jsonMatch[0]);
         if (data.logradouro) setAddress(`${data.logradouro}${data.bairro ? ', ' + data.bairro : ''}`);
@@ -340,16 +342,33 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onComplete, isDark 
 
 const PhotoUploadField = ({ label, value, photo, onChange, onPhoto, inputRef, onUpload, isDark }: any) => (
   <div className="space-y-4 text-center flex flex-col items-center shrink-0">
-    <div className="relative">
-      <div className={`w-24 h-24 lg:w-32 lg:h-32 rounded-3xl border-2 border-dashed flex items-center justify-center overflow-hidden shadow-inner group transition-all duration-300 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
-        {photo ? <img src={photo} className="w-full h-full object-cover" /> : <Camera className="text-slate-300" size={24} />}
-        <button type="button" onClick={() => inputRef.current?.click()} className="absolute inset-0 bg-black/0 hover:bg-black/20 flex items-center justify-center transition-all">
+    <div className="relative group flex flex-col items-center">
+      <div 
+        onClick={() => inputRef.current?.click()}
+        className={`w-24 h-24 lg:w-32 lg:h-32 rounded-3xl border-2 border-dashed flex items-center justify-center overflow-hidden shadow-inner cursor-pointer transition-all duration-300 ${photo ? 'border-indigo-500' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200 hover:border-indigo-400')}`}
+      >
+        {photo ? (
+          <img src={photo} className="w-full h-full object-cover" alt={label} />
+        ) : (
+          <Camera className="text-slate-300" size={24} />
+        )}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-all">
           <Plus className="text-white opacity-0 group-hover:opacity-100" size={20} />
-        </button>
+        </div>
       </div>
+      
+      <button 
+        type="button" 
+        onClick={() => inputRef.current?.click()}
+        className={`mt-3 flex items-center space-x-2 px-3 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${isDark ? 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-500 hover:text-indigo-600'}`}
+      >
+        <Upload size={12} />
+        <span>{photo ? 'Alterar Foto' : 'Upload Foto'}</span>
+      </button>
+
       <input type="file" className="hidden" ref={inputRef} accept="image/*" onChange={(e) => onUpload(e, onPhoto)} />
     </div>
-    <div className="w-full text-left">
+    <div className="w-full text-left mt-4">
       <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Nome do {label}</label>
       <input type="text" required value={value} onChange={(e) => onChange(e.target.value)} className={`w-full px-4 py-2.5 border rounded-xl outline-none text-xs font-bold ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white border-slate-100'}`} placeholder="Nome completo" />
     </div>

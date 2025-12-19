@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Globe, Map, User, Hash, MessageSquare, ShieldCheck, Heart, UserCircle, HelpCircle, BadgeCheck, MessageCircle } from 'lucide-react';
+import { Send, Globe, Map, User, Hash, MessageSquare, ShieldCheck, Heart, UserCircle, HelpCircle, BadgeCheck, MessageCircle, Star } from 'lucide-react';
 import { ChatMessage, User as UserType, UserRole } from '../types';
 import { storageService } from '../services/storageService';
 
@@ -16,11 +16,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ currentUser, isDark }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const isDirigente = currentUser.role !== 'COUPLE_USER';
+  const isDirector = currentUser.role === 'SPIRITUAL_DIRECTOR';
 
   useEffect(() => {
     const loadMessages = () => {
       const allMsgs = storageService.getMessages();
-      // Casais veem apenas o canal de suporte. Dirigentes veem os dois.
       if (!isDirigente) {
         setActiveRoom('SUPPORT');
       }
@@ -71,7 +71,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ currentUser, isDark }) => {
           </div>
           <div>
             <h2 className={`text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>
-              {activeRoom === 'ADMIN' ? 'Coordenação Nacional' : 'Central de Dúvidas e Suporte'}
+              {activeRoom === 'ADMIN' ? 'Coordenação Arquidiocesana' : 'Central de Dúvidas e Suporte'}
             </h2>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center">
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse"></span>
@@ -105,6 +105,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ currentUser, isDark }) => {
         {filteredMessages.map((msg, idx) => {
           const isMe = msg.senderId === currentUser.id;
           const isMsgDirigente = msg.senderRole !== 'COUPLE_USER';
+          const isMsgDirector = msg.senderRole === 'SPIRITUAL_DIRECTOR';
           
           return (
             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-fadeIn`} style={{ animationDelay: `${idx * 0.05}s` }}>
@@ -112,10 +113,10 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ currentUser, isDark }) => {
                 
                 {!isMe && (
                   <div className="flex items-center space-x-2 mb-1 px-2">
-                    <span className={`text-[9px] font-black uppercase tracking-widest ${isMsgDirigente ? 'text-indigo-500' : 'text-amber-600'}`}>
+                    <span className={`text-[9px] font-black uppercase tracking-widest ${isMsgDirector ? 'text-amber-500' : isMsgDirigente ? 'text-indigo-500' : 'text-amber-600'}`}>
                       {msg.senderName}
                     </span>
-                    {isMsgDirigente && <BadgeCheck size={12} className="text-indigo-500" />}
+                    {isMsgDirector ? <Star size={12} fill="currentColor" className="text-amber-500" /> : isMsgDirigente && <BadgeCheck size={12} className="text-indigo-500" />}
                     <span className="text-[8px] font-bold text-slate-400 uppercase">• {msg.senderParish}</span>
                   </div>
                 )}
@@ -123,15 +124,19 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ currentUser, isDark }) => {
                 <div className={`p-4 rounded-3xl shadow-sm text-sm leading-relaxed relative ${
                   isMe 
                     ? (isDark ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-indigo-600 text-white rounded-tr-none shadow-indigo-100') 
-                    : (isDark ? 'bg-slate-800 text-slate-100 border border-slate-700 rounded-tl-none' : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none')
+                    : (isMsgDirector 
+                        ? (isDark ? 'bg-amber-900/20 border-2 border-amber-500/50 text-slate-100 rounded-tl-none' : 'bg-amber-50 text-slate-800 border-2 border-amber-200 rounded-tl-none')
+                        : (isDark ? 'bg-slate-800 text-slate-100 border border-slate-700 rounded-tl-none' : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'))
                 }`}>
                   {msg.content}
                   
                   {/* Etiqueta de Função da Mensagem */}
                   <div className={`absolute -bottom-2 ${isMe ? 'right-2' : 'left-2'} text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border ${
-                    isMsgDirigente 
-                      ? (isDark ? 'bg-indigo-900 border-indigo-700 text-indigo-300' : 'bg-indigo-50 border-indigo-200 text-indigo-600') 
-                      : (isDark ? 'bg-amber-900 border-amber-800 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-600')
+                    isMsgDirector 
+                      ? 'bg-amber-500 border-amber-600 text-white'
+                      : isMsgDirigente 
+                        ? (isDark ? 'bg-indigo-900 border-indigo-700 text-indigo-300' : 'bg-indigo-50 border-indigo-200 text-indigo-600') 
+                        : (isDark ? 'bg-amber-900 border-amber-800 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-600')
                   }`}>
                     {msg.senderRole.replace(/_/g, ' ')}
                   </div>
