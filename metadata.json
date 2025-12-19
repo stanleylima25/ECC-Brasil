@@ -1,0 +1,7 @@
+{
+  "name": "Portal ECC Brasil - Sistema Interno Católico",
+  "description": "Plataforma oficial restrita para gestão do Encontro de Casais com Cristo. Acesso exclusivo para coordenadores e diretores espirituais da Igreja Católica Apostólica Romana.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
